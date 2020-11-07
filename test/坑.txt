@@ -1,0 +1,4 @@
+运行命令: https://www.learnopencv.com/install-opencv3-on-windows/
+
+1. 添加新项目要在HF/目录下的CMakeLists.txt下添加add_subdirectory(PROJECT_NAME)
+2. 在项目文件夹下, 再新建一个CMakeLists.txt, 根据是否需要OpenCV复制之前项目的CMakeLists.txt文件
