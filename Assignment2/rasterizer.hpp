@@ -86,8 +86,9 @@ namespace rst
         Eigen::Matrix4f view;
         Eigen::Matrix4f projection;
 
-        std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
-        std::map<int, std::vector<Eigen::Vector3i>> ind_buf;
+        // 下面三个map的key为索引, 且是共用一个索引
+        std::map<int, std::vector<Eigen::Vector3f>> pos_buf;  // map的key为索引, 如0, 3, value为三个点的坐标
+        std::map<int, std::vector<Eigen::Vector3i>> ind_buf;  // eg.{1: {{0, 1, 2}, {3, 4, 5}}, 4: {{0, 1, 2}, {3, 4, 5}}}, 
         std::map<int, std::vector<Eigen::Vector3f>> col_buf;
 
         std::vector<Eigen::Vector3f> frame_buf;

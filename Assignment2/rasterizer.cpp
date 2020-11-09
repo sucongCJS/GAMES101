@@ -43,7 +43,15 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
+    // 三角形三条边
+    // Vector2f a(_v[0][0], _v[0][1]);
+    // Vector2f b(_v[1][0], _v[1][1]);
+    // Vector2f c(_v[2][0], _v[2][1]);
+    // Vector2f Q(x, y);  // 要判断的点
+    // return ((a-b).cross(Q-b)[0]>0 && (c-a).cross(Q-a)[0]>0 && (b-c).cross(Q-c)[0]>0) || 
+    //        ((a-b).cross(Q-b)[0]<0 && (c-a).cross(Q-a)[0]<0 && (b-c).cross(Q-c)[0]<0);
 }
+
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
 {
@@ -56,7 +64,7 @@ static std::tuple<float, float, float> computeBarycentric2D(float x, float y, co
 void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf_id col_buffer, Primitive type)
 {
     auto& buf = pos_buf[pos_buffer.pos_id];
-    auto& ind = ind_buf[ind_buffer.ind_id];
+    auto& ind = ind_buf[ind_buffer.ind_id];  // 格式为{{0, 1, 2}, {3, 4, 5}}
     auto& col = col_buf[col_buffer.col_id];
 
     float f1 = (50 - 0.1) / 2.0;
@@ -66,16 +74,18 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
     for (auto& i : ind)
     {
         Triangle t;
-        Eigen::Vector4f v[] = {
+        Eigen::Vector4f v[] = {  // 齐次坐标的三个顶点
                 mvp * to_vec4(buf[i[0]], 1.0f),
                 mvp * to_vec4(buf[i[1]], 1.0f),
                 mvp * to_vec4(buf[i[2]], 1.0f)
         };
+
         //Homogeneous division
-        for (auto& vec : v) {
+        for (auto& vec : v) {  // 归一
             vec /= vec.w();
         }
-        //Viewport transformation
+
+        //Viewport transformation  视口
         for (auto & vert : v)
         {
             vert.x() = 0.5*width*(vert.x()+1.0);
@@ -83,9 +93,9 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
             vert.z() = vert.z() * f1 + f2;
         }
 
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 3; ++i)  // 用这三个顶点初始化三角形的三个顶点
         {
-            t.setVertex(i, v[i].head<3>());
+            t.setVertex(i, v[i].head<3>());  // v[i]是齐次坐标的, 有4个值, t.v是original coordinates的, 只有3个值
             t.setVertex(i, v[i].head<3>());
             t.setVertex(i, v[i].head<3>());
         }
@@ -103,19 +113,37 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 }
 
 //Screen space rasterization
-void rst::rasterizer::rasterize_triangle(const Triangle& t) {
+void rst::rasterizer::rasterize_triangle(const Triangle& t) 
+{
+    // std::cout << true;
     auto v = t.toVector4();
     
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
+    int minX = t.v[0][0]; int maxX = t.v[0][0];
+    int minY = t.v[0][1]; int maxY = t.v[0][1];
+    for(int i = 1; i < 3; ++i)
+    {
+        if(t.v[i][0] < minX) minX = t.v[i][0];
+        if(t.v[i][0] > maxX) maxX = t.v[i][0];
+        if(t.v[i][1] < minY) minY = t.v[i][1];
+        if(t.v[i][1] > maxY) maxY = t.v[i][1];
+    }
 
-    // If so, use the following code to get the interpolated z value.
-    //auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
-    //float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-    //float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-    //z_interpolated *= w_reciprocal;
+    // If so, use the following code to get the interpolated z value. ?
+    // auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+    // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+    // float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+    // z_interpolated *= w_reciprocal;
 
     // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
+    // for(int x=minX; x<=maxX; x++)
+    // {
+    //     for(int y=minY; y<=maxY; y++)
+    //     {
+    //         set_pixel()
+    //     }
+    // }
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
@@ -161,7 +189,6 @@ void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vecto
     //old index: auto ind = point.y() + point.x() * width;
     auto ind = (height-1-point.y())*width + point.x();
     frame_buf[ind] = color;
-
 }
 
 // clang-format on

@@ -10,15 +10,11 @@ using namespace Eigen;
 
 int main()
 {
-	Eigen::MatrixXf B(2,0);
-	cout<<"a"<<endl;
-	cout<<B<<endl;
-	cout<<"a"<<endl;
-	Eigen::VectorXf b2(2);
-	cout<<"a"<<endl;
-	cout<<b2<<endl;
-	cout<<"a"<<endl;
-	cout<<b2.transpose()*B<<endl;
-	cout<<"a"<<endl;
+
+	Vector2f a(2, 0);
+    Vector2f b(0, 2);
+    Vector2f c(-2,0);
+    Vector2f Q(2, 2);  // 要判断的点
+    cout<<a-b;
 }
 
