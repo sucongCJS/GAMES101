@@ -39,19 +39,14 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    // 三角形三条边
-    // Vector2f a(_v[0][0], _v[0][1]);
-    // Vector2f b(_v[1][0], _v[1][1]);
-    // Vector2f c(_v[2][0], _v[2][1]);
-    // Vector2f Q(x, y);  // 要判断的点
-    // return ((a-b).cross(Q-b)[0]>0 && (c-a).cross(Q-a)[0]>0 && (b-c).cross(Q-c)[0]>0) || 
-    //        ((a-b).cross(Q-b)[0]<0 && (c-a).cross(Q-a)[0]<0 && (b-c).cross(Q-c)[0]<0);
+    Vector3f Q(x, y, _v[0][2]);  // 要判断的点
+    // 顺时针算, 所以都是负的
+    return ((_v[0]-_v[1]).cross(Q-_v[1])[2]<0 && (_v[2]-_v[0]).cross(Q-_v[0])[2]<0 && (_v[1]-_v[2]).cross(Q-_v[2])[2]<0)/* || 
+           ((_v[0]-_v[1]).cross(Q-_v[1])[2]>0 && (_v[2]-_v[0]).cross(Q-_v[0])[2]>0 && (_v[1]-_v[2]).cross(Q-_v[2])[2]>0)*/;
 }
-
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
 {
@@ -71,10 +66,10 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
     float f2 = (50 + 0.1) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
-    for (auto& i : ind)
+    for (auto& i : ind)  // i包含一个三角形的三个点的索引 eg.{0, 1, 2}
     {
         Triangle t;
-        Eigen::Vector4f v[] = {  // 齐次坐标的三个顶点
+        Eigen::Vector4f v[] = {  // 一个三角形三个点的齐次坐标
                 mvp * to_vec4(buf[i[0]], 1.0f),
                 mvp * to_vec4(buf[i[1]], 1.0f),
                 mvp * to_vec4(buf[i[2]], 1.0f)
@@ -137,13 +132,26 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
     // z_interpolated *= w_reciprocal;
 
     // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
-    // for(int x=minX; x<=maxX; x++)
-    // {
-    //     for(int y=minY; y<=maxY; y++)
-    //     {
-    //         set_pixel()
-    //     }
-    // }
+    for(int x=minX; x<=maxX; x++)
+    {
+        for(int y=minY; y<=maxY; y++)
+        {
+            if(insideTriangle(x, y, t.v))
+            {
+                // z也是要插值的, 因为三角形的点的z值可能不一样
+                auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+                float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                z_interpolated *= w_reciprocal;
+                
+                if(z_interpolated < depth_buf[get_index(x, y)])  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
+                {
+                    set_pixel(x, y, t.color[0]);
+                    // std::cout<<t.color[0]<<std::endl;
+                }
+            }
+        }
+    }
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
@@ -184,10 +192,10 @@ int rst::rasterizer::get_index(int x, int y)
     return (height-1-y)*width + x;
 }
 
-void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color)
+void rst::rasterizer::set_pixel(int x, int y, const Eigen::Vector3f& color)
 {
     //old index: auto ind = point.y() + point.x() * width;
-    auto ind = (height-1-point.y())*width + point.x();
+    auto ind = get_index(x, y);
     frame_buf[ind] = color;
 }
 

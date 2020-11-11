@@ -120,17 +120,17 @@ int main(int argc, const char** argv)
 
     std::vector<Eigen::Vector3f> cols
             {
-                    {217.0, 238.0, 185.0},
-                    {217.0, 238.0, 185.0},
-                    {217.0, 238.0, 185.0},
-                    {185.0, 217.0, 238.0},
-                    {185.0, 217.0, 238.0},
-                    {185.0, 217.0, 238.0}
+                    {217, 238, 185},
+                    {217, 238, 185},
+                    {217, 238, 185},
+                    {185, 217, 238},
+                    {185, 217, 238},
+                    {185, 217, 238}
             };
 
     auto pos_id = r.load_positions(pos);  // 保存顶点信息, 每加载一次id++
     auto ind_id = r.load_indices(ind);  // 保存索引信息, 每加载一次id++, 加的是同一个id?
-    auto col_id = r.load_colors(cols);  
+    auto col_id = r.load_colors(cols);
 
     int key = 0;
     int frame_count = 0;
