@@ -27,14 +27,16 @@ void Triangle::setVertex(int ind, Vector3f ver){
 void Triangle::setNormal(int ind, Vector3f n){
     normal[ind] = n;
 }
-void Triangle::setColor(int ind, int r, int g, int b) {
-    if((r<0) || (r>255) || (g<0) || (g>255) || (b<0) || (b>255)) {
+void Triangle::setColor(int ind, float r, float g, float b) {
+    if((r<0.0) || (r>255.) ||
+       (g<0.0) || (g>255.) ||
+       (b<0.0) || (b>255.)) {
         fprintf(stderr, "ERROR! Invalid color values");
         fflush(stderr);
         exit(-1);
     }
 
-    color[ind] = Vector3f(r, g, b);
+    color[ind] = Vector3f((float)r/255.,(float)g/255.,(float)b/255.);
     return;
 }
 void Triangle::setTexCoord(int ind, float s, float t) {

@@ -42,10 +42,11 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    Vector3f Q(x, y, _v[0][2]);  // 要判断的点
+    Vector3f Q(x+0.5, y+0.5, 0);  // 要判断的点, 像素的中心是否在三角形内来决定像素是否在三角形内
     // 顺时针算, 所以都是负的
-    return ((_v[0]-_v[1]).cross(Q-_v[1])[2]<0 && (_v[2]-_v[0]).cross(Q-_v[0])[2]<0 && (_v[1]-_v[2]).cross(Q-_v[2])[2]<0)/* || 
-           ((_v[0]-_v[1]).cross(Q-_v[1])[2]>0 && (_v[2]-_v[0]).cross(Q-_v[0])[2]>0 && (_v[1]-_v[2]).cross(Q-_v[2])[2]>0)*/;
+    return ((_v[0]-_v[1]).cross(Q-_v[1]).z()<0 && 
+            (_v[2]-_v[0]).cross(Q-_v[0]).z()<0 && 
+            (_v[1]-_v[2]).cross(Q-_v[2]).z()<0);
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -115,26 +116,24 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
     
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
-    int minX = t.v[0][0]; int maxX = t.v[0][0];
-    int minY = t.v[0][1]; int maxY = t.v[0][1];
-    for(int i = 1; i < 3; ++i)
-    {
-        if(t.v[i][0] < minX) minX = t.v[i][0];
-        if(t.v[i][0] > maxX) maxX = t.v[i][0];
-        if(t.v[i][1] < minY) minY = t.v[i][1];
-        if(t.v[i][1] > maxY) maxY = t.v[i][1];
-    }
-
-    // If so, use the following code to get the interpolated z value. ?
-    // auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
-    // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-    // float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-    // z_interpolated *= w_reciprocal;
+    // int box_left = t.v[0][0];   int box_right = t.v[0][0];
+    // int box_bottom = t.v[0][1]; int box_top = t.v[0][1];
+    // for(int i = 1; i < 3; ++i)
+    // {
+    //     if(t.v[i][0] < box_left) box_left = t.v[i][0];
+    //     if(t.v[i][0] > box_right) box_right = t.v[i][0];
+    //     if(t.v[i][1] < box_bottom) box_bottom = t.v[i][1];
+    //     if(t.v[i][1] > box_top) box_top = t.v[i][1];
+    // }
+    int box_left = std::min(v[0].x(), std::min(v[1].x(), v[2].x()));
+    int box_right = std::max(v[0].x(), std::max(v[1].x(), v[2].x()));
+    int box_bottom = std::min(v[0].y(), std::min(v[1].y(), v[2].y()));
+    int box_top = std::max(v[0].y(), std::max(v[1].y(), v[2].y()));
 
     // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
-    for(int x=minX; x<=maxX; x++)
+    for(int x=box_left; x<=box_right; x++)
     {
-        for(int y=minY; y<=maxY; y++)
+        for(int y=box_bottom; y<=box_top; y++)
         {
             if(insideTriangle(x, y, t.v))
             {
@@ -146,7 +145,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
                 
                 if(z_interpolated < depth_buf[get_index(x, y)])  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
                 {
-                    set_pixel(x, y, t.color[0]);
+                    set_pixel(x, y, t.getColor());
                     depth_buf[get_index(x,y)] = z_interpolated;
                 }
             }
