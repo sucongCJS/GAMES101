@@ -66,7 +66,7 @@ namespace rst
         void set_view(const Eigen::Matrix4f& v);
         void set_projection(const Eigen::Matrix4f& p);
 
-        void set_pixel(int x, int y, const Eigen::Vector3f& color, float percent);  // percent 为颜色的深度
+        void set_pixel(int x, int y, const Eigen::Vector3f& color);
 
         void clear(Buffers buff);
 

@@ -39,26 +39,14 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-static bool insideTriangle(float x, float y, const Vector3f* _v)
+static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    Vector3f Q(x, y, 0);  // 要判断的点, 像素的中心是否在三角形内来决定像素是否在三角形内
+    Vector3f Q(x+0.5, y+0.5, 0);  // 要判断的点, 像素的中心是否在三角形内来决定像素是否在三角形内
     // 顺时针算, 所以都是负的
     return ((_v[0]-_v[1]).cross(Q-_v[1]).z()<0 && 
             (_v[2]-_v[0]).cross(Q-_v[0]).z()<0 && 
             (_v[1]-_v[2]).cross(Q-_v[2]).z()<0);
-}
-
-
-// MSAA超采样: 返回像素在三角形内的百分比, 在像素内采四个点, 所以可能的值有0, 0.25, 0.5, 0.75, 1
-static float insideTrianglePercent(int x, int y, const Vector3f* _v)
-{
-    float percent = 0;
-    percent += insideTriangle(x+0.25, y+0.25, _v) * 0.25 + 
-               insideTriangle(x+0.75, y+0.25, _v) * 0.25 + 
-               insideTriangle(x+0.25, y+0.75, _v) * 0.25 + 
-               insideTriangle(x+0.75, y+0.75, _v) * 0.25;
-    return percent;
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -147,9 +135,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
     {
         for(int y=box_bottom; y<=box_top; y++)
         {
-            float percent = insideTrianglePercent(x, y, t.v);
-            // float percent = insideTriangle(x, y, t.v);  // 不加MSAA抗锯齿
-            if(percent > 0)  // 只要像素有部分正三角形内
+            if(insideTriangle(x, y, t.v))
             {
                 // z也是要插值的, 因为三角形的点的z值可能不一样
                 auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
@@ -159,7 +145,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
                 
                 if(z_interpolated < depth_buf[get_index(x, y)])  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
                 {
-                    set_pixel(x, y, t.getColor(), percent);
+                    set_pixel(x, y, t.getColor());
                     depth_buf[get_index(x,y)] = z_interpolated;
                 }
             }
@@ -205,11 +191,11 @@ int rst::rasterizer::get_index(int x, int y)
     return (height-1-y)*width + x;
 }
 
-void rst::rasterizer::set_pixel(int x, int y, const Eigen::Vector3f& color, float percent)
+void rst::rasterizer::set_pixel(int x, int y, const Eigen::Vector3f& color)
 {
     //old index: auto ind = point.y() + point.x() * width;
     auto ind = get_index(x, y);
-    frame_buf[ind] = color*percent;
+    frame_buf[ind] = color;
 }
 
 // clang-format on

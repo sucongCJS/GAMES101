@@ -104,7 +104,7 @@ int main(int argc, const char** argv)
 
     std::vector<Eigen::Vector3f> pos
             {
-                    {3, 0, -6},  // 负的越大, 越靠前
+                    {3, 0, -6},
                     {0, 2, -2},
                     {-3, 0, -6},
                     {3.5, -1, -5},
