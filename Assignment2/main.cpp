@@ -104,9 +104,9 @@ int main(int argc, const char** argv)
 
     std::vector<Eigen::Vector3f> pos
             {
-                    {2, 0, -2},
+                    {3, 0, -6},
                     {0, 2, -2},
-                    {-2, 0, -2},
+                    {-3, 0, -6},
                     {3.5, -1, -5},
                     {2.5, 1.5, -5},
                     {-1, 0.5, -5}

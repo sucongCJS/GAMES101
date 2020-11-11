@@ -147,7 +147,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
                 if(z_interpolated < depth_buf[get_index(x, y)])  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
                 {
                     set_pixel(x, y, t.color[0]);
-                    // std::cout<<t.color[0]<<std::endl;
+                    depth_buf[get_index(x,y)] = z_interpolated;
                 }
             }
         }
