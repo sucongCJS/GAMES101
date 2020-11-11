@@ -7,22 +7,33 @@ using namespace cv;
 using namespace std;
 using namespace Eigen;
 
-static bool insideTriangle(int x, int y, const Vector3f* _v)
+static bool insideTriangle(float x, float y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    Vector3f Q(x, y, _v[0][2]);  // 要判断的点
+    Vector3f Q(x, y, 0);  // 要判断的点, 像素的中心是否在三角形内来决定像素是否在三角形内
     // 顺时针算, 所以都是负的
-    return ((_v[0]-_v[1]).cross(Q-_v[1])[2]<0 && (_v[2]-_v[0]).cross(Q-_v[0])[2]<0 && (_v[1]-_v[2]).cross(Q-_v[2])[2]<0)/* || 
-           ((_v[0]-_v[1]).cross(Q-_v[1])[2]>0 && (_v[2]-_v[0]).cross(Q-_v[0])[2]>0 && (_v[1]-_v[2]).cross(Q-_v[2])[2]>0)*/;
+    return ((_v[0]-_v[1]).cross(Q-_v[1]).z()<0 && 
+            (_v[2]-_v[0]).cross(Q-_v[0]).z()<0 && 
+            (_v[1]-_v[2]).cross(Q-_v[2]).z()<0);
+}
+
+static float insideTrianglePercent(int x, int y, const Vector3f* _v)
+{
+    float percent = 0;
+    percent += insideTriangle(x+0.25, y+0.25, _v) * 0.25 + 
+               insideTriangle(x+0.75, y+0.25, _v) * 0.25 + 
+               insideTriangle(x+0.25, y+0.75, _v) * 0.25 + 
+               insideTriangle(x+0.75, y+0.75, _v) * 0.25;
+    return percent;
 }
 
 int main()
 {
 	std::vector<Eigen::Vector3f> pos
             {
-                    {3, 0, -2},
-                    {0, 3, -3},
-                    {-3, 0, -3},
+                    {2, 0.5, 0},
+                    {0, 2, 0},
+                    {-2, 0.5, 0},
             };
 
     std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
@@ -34,10 +45,16 @@ int main()
         v[i] = buf[i];
     }
     Vector3f Q(0, 1, 0);
-    // cout<<(v[0]-v[1]).cross(Q-v[1]);
-    cout<<insideTriangle(1,1,v)<<endl;
-    cout<<insideTriangle(-1,1,v)<<endl;
-    cout<<insideTriangle(0,1,v)<<endl;
-    cout<<insideTriangle(0,2,v)<<endl;
+    // cout<<(v[0]-v[1]).cross(Q-v[1]);R
+    // cout<<insideTrianglePercent(1,1,v)<<endl;
+    // cout<<insideTrianglePercent(-1,1,v)<<endl;
+    // cout<<insideTrianglePercent(0,1,v)<<endl;
+    // cout<<insideTrianglePercent(0,2,v)<<endl;
+    cout<<insideTrianglePercent(0,0,v);
+    // for(float i=-4; i<4; i+=1){
+    //     for(float j=-4; j<4; j+=1){
+    //         cout<<insideTrianglePercent(i, j, v)<<endl;
+    //     }
+    // }
 }
 
