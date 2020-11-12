@@ -61,6 +61,23 @@ static float insideTrianglePercent(int x, int y, const Vector3f* _v)
     return percent;
 }
 
+// 改进, 可以指定采样点数, density必须是能开根号的数
+static float insideTrianglePercent(int x, int y, const Vector3f* _v, int density)
+{
+    float percent = 0;
+    float step = sqrt(density);  // 如果density是16, step就是4, 4行每行要取4个点
+    float fragment_spacing = 1.0/step;  // 采样点与采样点之间的距离是1/4 = 0.25
+    float margin = fragment_spacing/2;  // 邻近边界的采样点和边界的距离是0.25/2 = 0.125
+    float weight = 1.0/density;  // 每个采样点的权重, 注意类型
+
+    for(int i=0; i<step; i++)
+        for(int j=0; j<step; j++)
+            percent += insideTriangle(x + margin+fragment_spacing*i, 
+                                      y + margin+fragment_spacing*j, _v) * weight;
+
+    return percent;
+}
+
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
 {
     float alpha = (x*(v[1].y() - v[2].y()) + (v[2].x() - v[1].x())*y + v[1].x()*v[2].y() - v[2].x()*v[1].y()) / (v[0].x()*(v[1].y() - v[2].y()) + (v[2].x() - v[1].x())*v[0].y() + v[1].x()*v[2].y() - v[2].x()*v[1].y());
@@ -148,7 +165,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
     {
         for(int y=box_bottom; y<=box_top; y++)
         {
-            float percent = insideTrianglePercent(x, y, t.v);
+            float percent = insideTrianglePercent(x, y, t.v, 16);  // 4个插值点
             // float percent = insideTriangle(x, y, t.v);  // 不加MSAA抗锯齿
             if(percent > 0)  // 只要像素有部分正三角形内
             {

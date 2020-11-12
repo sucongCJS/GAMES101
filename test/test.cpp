@@ -27,6 +27,22 @@ static float insideTrianglePercent(int x, int y, const Vector3f* _v)
     return percent;
 }
 
+static float insideTrianglePercent(int x, int y, const Vector3f* _v, int density)
+{
+    float percent = 0;
+    float step = sqrt(density);  // 如果density是16, step就是4, 4行每行要取4个点
+    float fragment_spacing = 1/step;  // 采样点与采样点之间的距离是1/4 = 0.25
+    float margin = fragment_spacing/2;  // 邻近边界的采样点和边界的距离是0.25/2 = 0.125
+    float weight = 1.0/density;  // 每个采样点的权重
+
+    for(int i=0; i<step; i++)
+        for(int j=0; j<step; j++)
+            percent += insideTriangle(x + margin+fragment_spacing*i, 
+                                      y + margin+fragment_spacing*j, _v) * weight;
+
+    return percent;
+}
+
 int main()
 {
 	std::vector<Eigen::Vector3f> pos
@@ -50,7 +66,7 @@ int main()
     // cout<<insideTrianglePercent(-1,1,v)<<endl;
     // cout<<insideTrianglePercent(0,1,v)<<endl;
     // cout<<insideTrianglePercent(0,2,v)<<endl;
-    cout<<insideTrianglePercent(0,0,v);
+    cout<<insideTrianglePercent(0,0,v,4);
     // for(float i=-4; i<4; i+=1){
     //     for(float j=-4; j<4; j+=1){
     //         cout<<insideTrianglePercent(i, j, v)<<endl;
