@@ -1,12 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
-project(Rasterizer)
+aux_source_directory (. DIR) # '.'代表当前文件夹 这个指令将遍历当前文件夹下的所有源代码，将它作为一个 list存入变量‘DIR’中
+
+set(IDX Assignment3) #定义一个变量‘IDX’
+
+add_executable (${IDX} ${DIR}) #在整个工程里添加一个名为${IDX}的可执行文件，可执行文件的源代码是${DIR}
 
 find_package(OpenCV REQUIRED)
+target_link_libraries(${IDX} ${OpenCV_LIBS}) #在第二步里提到的配置OPENCV的方法
 
-set(CMAKE_CXX_STANDARD 17)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/${IDX}) #配置可执行文件的输出路径
 
-include_directories(/usr/local/include ./include)
-
-add_executable(Rasterizer main.cpp rasterizer.hpp rasterizer.cpp global.hpp Triangle.hpp Triangle.cpp Texture.hpp Texture.cpp Shader.hpp OBJ_Loader.h)
-target_link_libraries(Rasterizer ${OpenCV_LIBRARIES})
-#target_compile_options(Rasterizer PUBLIC -Wall -Wextra -pedantic)
+add_definitions(-std=c++17)
