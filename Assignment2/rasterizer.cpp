@@ -101,17 +101,17 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
     {
         Triangle t;
         Eigen::Vector4f v[] = {  // 一个三角形三个点的齐次坐标
-                mvp * to_vec4(buf[i[0]], 1.0f),
-                mvp * to_vec4(buf[i[1]], 1.0f),
+                mvp * to_vec4(buf[i[0]], 1.0f),  // 一个三角形的第一个点
+                mvp * to_vec4(buf[i[1]], 1.0f),  // 一个三角形的第二个点
                 mvp * to_vec4(buf[i[2]], 1.0f)
-        };
+        };  // mvp所有坐标都在[-1,1]^3范围内
 
         //Homogeneous division
         for (auto& vec : v) {  // 归一
             vec /= vec.w();
         }
 
-        //Viewport transformation  视口
+        //Viewport transformation  视口, 根据屏幕大小做适应, 坐标范围也在屏幕大小内
         for (auto & vert : v)
         {
             vert.x() = 0.5*width*(vert.x()+1.0);
@@ -225,8 +225,9 @@ int rst::rasterizer::get_index(int x, int y)
 
 void rst::rasterizer::set_pixel(int x, int y, const Eigen::Vector3f& color, float percent)
 {
-    //old index: auto ind = point.y() + point.x() * width;
-    auto ind = get_index(x, y);
+    //old index: auto ind = x + y * width;
+    // auto ind = get_index(x, y);
+    auto ind = x + y * width;
     frame_buf[ind] = color*percent;
 }
 
