@@ -167,7 +167,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
         {
             float percent = insideTrianglePercent(x, y, t.v, 16);  // 4个插值点
             // float percent = insideTriangle(x, y, t.v);  // 不加MSAA抗锯齿
-            if(percent > 0)  // 只要像素有部分正三角形内
+            if(percent > 0)  // 只要像素有部分在三角形内
             {
                 // z也是要插值的, 因为三角形的点的z值可能不一样
                 auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
