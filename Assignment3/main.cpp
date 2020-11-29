@@ -8,6 +8,18 @@
 #include "Texture.hpp"
 #include "OBJ_Loader.h"
 
+// 转为弧度制
+float radian(float rotation_angle)
+{
+    return rotation_angle*MY_PI/180.0f;
+}
+
+// 欧式距离的平方
+float get_euclidean_distance_square(Vector3f p1, Vector3f p2)
+{
+    return ((p1-p2).array() * (p1-p2).array()).sum();
+}
+
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
@@ -49,8 +61,44 @@ Eigen::Matrix4f get_model_matrix(float angle)
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
-    // TODO: Use the same projection matrix from the previous assignments
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
 
+    float half_height = tan(radian(eye_fov/2))*zNear;
+    float half_width = aspect_ratio*half_height;
+    float r =  half_width;
+    float l = -half_width;
+    float t =  half_height;
+    float b = -half_height;
+    float n = -zNear;
+    float f = -zFar;
+
+    // 正交投影的平移矩阵: 平移到原点
+    Eigen::Matrix4f matrix_ortho_tranf = Eigen::Matrix4f::Identity();
+    matrix_ortho_tranf(0,3) = -(r+l)/2.0f;
+    matrix_ortho_tranf(1,3) = -(t+b)/2.0f;
+    matrix_ortho_tranf(2,3) = -(n+f)/2.0f;
+
+    // 正交投影的缩放矩阵: 缩放成一个canonical
+    Eigen::Matrix4f matrix_ortho_scale = Eigen::Matrix4f::Identity();
+    matrix_ortho_scale(0,0) = 2.0f/(r-l);
+    matrix_ortho_scale(1,1) = 2.0f/(t-b);
+    matrix_ortho_scale(2,2) = 2.0f/(n-f);
+
+    // 正交投影矩阵
+    Eigen::Matrix4f matrix_ortho = matrix_ortho_scale * matrix_ortho_tranf;
+
+    // 透视投影转正交投影矩阵
+    Eigen::Matrix4f matrix_persp2ortho = Eigen::Matrix4f::Zero();
+    matrix_persp2ortho(0,0) = n;
+    matrix_persp2ortho(1,1) = n;
+    matrix_persp2ortho(2,2) = n+f;
+    matrix_persp2ortho(2,3) = -n*f;
+    matrix_persp2ortho(3,2) = 1;
+
+    projection = matrix_ortho * matrix_persp2ortho * projection;
+    // 如果只做matrix_persp2ortho变换，图形会被缩小
+
+    return projection;
 }
 
 Eigen::Vector3f vertex_shader(const vertex_shader_payload& payload)
@@ -118,17 +166,18 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     return result_color * 255.f;
 }
 
+// Blinn-Phong Reflection Model
 Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
 {
-    Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
-    Eigen::Vector3f kd = payload.color;
-    Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
+    Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);  // 环境光系数
+    Eigen::Vector3f kd = payload.color;  // 漫反射系数
+    Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);  // 镜面反射系数
 
     auto l1 = light{{20, 20, 20}, {500, 500, 500}};
     auto l2 = light{{-20, 20, 0}, {500, 500, 500}};
 
     std::vector<light> lights = {l1, l2};
-    Eigen::Vector3f amb_light_intensity{10, 10, 10};
+    Eigen::Vector3f amb_light_intensity{10, 10, 10};  // 环境光强度
     Eigen::Vector3f eye_pos{0, 0, 10};
 
     float p = 150;
@@ -142,7 +191,17 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        
+        auto r2 = get_euclidean_distance_square(light.position, point);  // 光源到平面的距离的平方
+        auto l = (light.position - point).normalized();  // light vector 从平面指向点光源的向量 单位化, 只保留方向信息
+        auto h = ((eye_pos + l) / (eye_pos + l).norm()).normalized();  // halfway vector 半程向量 单位化, 只保留方向信息
+
+        Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
+        Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(l));
+        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(h));
+
+        // std::cout<<result_color<<std::endl<<std::endl;
+
+        result_color += ambient + diffuse + specular;
     }
 
     return result_color * 255.f;
@@ -240,17 +299,17 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
 
 int main(int argc, const char** argv)
 {
-    std::vector<Triangle*> TriangleList;
+    std::vector<Triangle*> TriangleList;  // 模型的三角形列表, 每个三角形都有对应的法向量和纹理坐标
 
     float angle = 140.0;
     bool command_line = false;
 
     std::string filename = "output.png";
     objl::Loader Loader;
-    std::string obj_path = "../models/spot/";
+    std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
 
     // Load .obj File
-    bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile("D:/x/HF/GAMES101/HF/Assignment3/models/spot/spot_triangulated_good.obj");
     for(auto mesh:Loader.LoadedMeshes)
     {
         for(int i=0;i<mesh.Vertices.size();i+=3)

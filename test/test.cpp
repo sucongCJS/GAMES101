@@ -6,17 +6,13 @@
 #include <string>
 #include <functional>
 #include <optional>
+#include <fstream>
 using namespace cv;
 using namespace Eigen;
- 
-// optional can be used as the return type of a factory that may fail
-std::optional<std::string> create(bool b) {
-    if (b)
-        return "Godzilla";
-    return {};
-}
+using namespace std;
 
 int main()
 {
-	std::cout<< __cplusplus/100%100;
+    std::ifstream file("D:/x/HF/GAMES101/HF/Assignment3/models/spotw/spot_triangulated_good.obj");
+    cout<<file.is_open();
 }

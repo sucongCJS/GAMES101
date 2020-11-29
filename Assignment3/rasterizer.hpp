@@ -105,7 +105,7 @@ namespace rst
 
         std::optional<Texture> texture;
 
-        std::function<Eigen::Vector3f(fragment_shader_payload)> fragment_shader;
+        std::function<Eigen::Vector3f(fragment_shader_payload)> fragment_shader;  // 返回值是Vector3f, 传入参数是fragment_shader_payload
         std::function<Eigen::Vector3f(vertex_shader_payload)> vertex_shader;
 
         std::vector<Eigen::Vector3f> frame_buf;
