@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)  #cmake版本要求
+cmake_minimum_required (VERSION 3.8.11)  #cmake版本要求
 project (GAMES101)  #命名这个project
 include_directories(${PROJECT_SOURCE_DIR})  #引用Eigen, ${PROJECT_SOURCE_DIR}即HF/的绝对路径，代码框架里引用Eigen的方式是<eigen3/Eigen/Eigen>
 
