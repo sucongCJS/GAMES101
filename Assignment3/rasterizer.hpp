@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#pragma GCC optimize(2)
 
 #include <eigen3/Eigen/Eigen>
 #include <optional>
