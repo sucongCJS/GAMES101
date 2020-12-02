@@ -8,4 +8,5 @@ find_package(OpenCV REQUIRED)
 target_link_libraries(${IDX} ${OpenCV_LIBS}) #在第二步里提到的配置OPENCV的方法
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/${IDX}) #配置可执行文件的输出路径
+set(CMAKE_CXX_STANDARD 17) #配置C++ Standard
 add_definitions(-std=c++17)
