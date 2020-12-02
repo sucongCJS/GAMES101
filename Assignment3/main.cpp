@@ -409,15 +409,16 @@ int main(int argc, const char** argv)
         cv::imwrite(filename, image);
         key = cv::waitKey(10);
 
-        if (key == 'a' )
-        {
-            angle -= 0.1;
-        }
-        else if (key == 'd')
-        {
-            angle += 0.1;
-        }
+        // if (key == 'a' )
+        // {
+            angle -= 1;
+        // }
+        // else if (key == 'd')
+        // {
+        //     angle += 1;
+        // }
 
+        std::cout << "frame count: " << frame_count++ << '\n';
     }
     return 0;
 }
