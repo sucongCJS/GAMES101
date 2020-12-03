@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include <optional>
+#include <opencv2/opencv.hpp>
 using namespace cv;
 using namespace Eigen;
 using namespace std;

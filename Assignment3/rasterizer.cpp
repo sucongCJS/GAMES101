@@ -234,7 +234,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
             vec.z()/=vec.w();
         }
 
-        Eigen::Matrix4f inv_trans = (view * model).inverse().transpose();
+        Eigen::Matrix4f inv_trans = (view * model).inverse().transpose();  // 逆变换?
         Eigen::Vector4f n[] = {
                 inv_trans * to_vec4(t->normal[0], 0.0f),
                 inv_trans * to_vec4(t->normal[1], 0.0f),
@@ -248,13 +248,13 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
             vert.y() = 0.5*height*(vert.y()+1.0);
             vert.z() = vert.z() * f1 + f2;
         }
-
+        // 重新设置Vertex, main中也调用过setVertex(), 而这里是投影后的Vertex
         for (int i = 0; i < 3; ++i)
         {
             //screen space coordinates
             newtri.setVertex(i, v[i]);
         }
-
+        
         for (int i = 0; i < 3; ++i)
         {
             //view space normal
@@ -287,7 +287,7 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
 }
 
 //Screen space rasterization
-void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& view_pos) 
+void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& view_pos)
 {
     auto v = t.v;
     auto c = t.color;
@@ -312,7 +312,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
                 float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());  // Z is interpolated view space depth for the current pixel, v[i].w() is the vertex view space depth value z.
 
                 float zp = (alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w()) * Z;  // * zp is depth between zNear and zFar, used for z-buffer
-                
+
                 if(zp < depth_buf[get_index(x, y)])  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
                 {
                     // TODO: Interpolate the attributes:

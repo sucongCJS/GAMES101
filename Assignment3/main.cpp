@@ -132,7 +132,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     if (payload.texture)
     {
         // TODO: Get the texture value at the texture coordinates of the current fragment
-
+        return_color = payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y());
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
@@ -160,7 +160,15 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
+        auto r2 = get_euclidean_distance_square(light.position, point);  // 光源到平面的距离的平方
+        auto l = (light.position - point).normalized();  // light vector 从平面指向点光源的向量 单位化, 只保留方向信息
+        auto h = ((eye_pos + l) / (eye_pos + l).norm()).normalized();  // halfway vector 半程向量 单位化, 只保留方向信息
 
+        Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
+        Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(l));
+        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(h));
+
+        result_color += ambient + diffuse + specular;
     }
 
     return result_color * 255.f;
@@ -182,32 +190,27 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
 
     float p = 150;
 
-    Eigen::Vector3f color = payload.color;
     Eigen::Vector3f point = payload.view_pos;
+    Eigen::Vector3f color = payload.color;
     Eigen::Vector3f normal = payload.normal;
 
     Eigen::Vector3f result_color = {0, 0, 0};
     for (auto& light : lights)
     {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
-        // components are. Then, accumulate that result on the *result_color* object.
-        auto r2 = get_euclidean_distance_square(light.position, point);  // 光源到平面的距离的平方
-        auto l = (light.position - point).normalized();  // light vector 从平面指向点光源的向量 单位化, 只保留方向信息
-        auto h = ((eye_pos + l) / (eye_pos + l).norm()).normalized();  // halfway vector 半程向量 单位化, 只保留方向信息
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* components are. Then, accumulate that result on the *result_color* object.
+        auto r2 = get_euclidean_distance_square(light.position, point);
+        auto l = (light.position - point).normalized();
+        auto h = ((eye_pos + l) / (eye_pos + l).norm()).normalized();
 
         Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
         Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(l));
         Vector3f specular = ks.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(h));
-
-        // std::cout<<result_color<<std::endl<<std::endl;
 
         result_color += ambient + diffuse + specular;
     }
 
     return result_color * 255.f;
 }
-
-
 
 Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payload)
 {
@@ -306,20 +309,22 @@ int main(int argc, const char** argv)
 
     std::string filename = "output.png";
     objl::Loader Loader;
-    std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
+    // std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
+    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
 
     // Load .obj File
-    bool loadout = Loader.LoadFile("D:/x/HF/GAMES101/HF/Assignment3/models/spot/spot_triangulated_good.obj");
+    // bool loadout = Loader.LoadFile("D:/x/HF/GAMES101/HF/Assignment3/models/spot/spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile("D:/x/GAMES/GAMES101/Assignment3/models/spot/spot_triangulated_good.obj");
     for(auto mesh:Loader.LoadedMeshes)
     {
         for(int i=0;i<mesh.Vertices.size();i+=3)
         {
-            Triangle* t = new Triangle();
+            Triangle* t = new Triangle();  // 纹理有多少三角形就new多少三角形
             for(int j=0;j<3;j++)
             {
-                t->setVertex(j,Vector4f(mesh.Vertices[i+j].Position.X,mesh.Vertices[i+j].Position.Y,mesh.Vertices[i+j].Position.Z,1.0));
-                t->setNormal(j,Vector3f(mesh.Vertices[i+j].Normal.X,mesh.Vertices[i+j].Normal.Y,mesh.Vertices[i+j].Normal.Z));
-                t->setTexCoord(j,Vector2f(mesh.Vertices[i+j].TextureCoordinate.X, mesh.Vertices[i+j].TextureCoordinate.Y));
+                t->setVertex(j, Vector4f(mesh.Vertices[i+j].Position.X, mesh.Vertices[i+j].Position.Y, mesh.Vertices[i+j].Position.Z, 1.0));
+                t->setNormal(j, Vector3f(mesh.Vertices[i+j].Normal.X, mesh.Vertices[i+j].Normal.Y, mesh.Vertices[i+j].Normal.Z));
+                t->setTexCoord(j, Vector2f(mesh.Vertices[i+j].TextureCoordinate.X, mesh.Vertices[i+j].TextureCoordinate.Y));
             }
             TriangleList.push_back(t);
         }
@@ -331,6 +336,7 @@ int main(int argc, const char** argv)
     r.set_texture(Texture(obj_path + texture_path));
 
     std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
+    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
 
     if (argc >= 2)
     {

@@ -15,7 +15,7 @@ public:
     Vector4f v[3]; /*the original coordinates of the triangle, v0, v1, v2 in counter clockwise order*/
     /*Per vertex values*/
     Vector3f color[3]; //color at each vertex;
-    Vector2f tex_coords[3]; //texture u,v
+    Vector2f tex_coords[3]; //texture u,v 三个点的uv
     Vector3f normal[3]; //normal vector for each vertex
 
     Texture *tex= nullptr;
