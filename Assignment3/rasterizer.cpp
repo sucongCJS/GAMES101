@@ -6,6 +6,7 @@
 #include "rasterizer.hpp"
 #include <opencv2/opencv.hpp>
 #include <math.h>
+#include <memory.h>
 
 
 rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
@@ -323,7 +324,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
 
                     fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);  // normalized将向量单位化
                     payload.view_pos = interpolated_shadingcoords;
-                    auto pixel_color = fragment_shader(payload);  // Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
+                    auto pixel_color = fragment_shader(payload);  // Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color; fragment_shader具体调用哪个shader在main函数中已经设定好了
                     
                     set_pixel(Eigen::Vector2i(x, y), pixel_color);
                     depth_buf[get_index(x,y)] = zp;
@@ -352,7 +353,8 @@ void rst::rasterizer::clear(rst::Buffers buff)
 {
     if ((buff & rst::Buffers::Color) == rst::Buffers::Color)
     {
-        std::fill(frame_buf.begin(), frame_buf.end(), Eigen::Vector3f{0, 0, 0});
+        // std::fill(frame_buf.begin(), frame_buf.end(), Eigen::Vector3f{0, 0, 0});
+        memset(frame_buf.data(), 0, sizeof(float)*3*frame_buf.size());
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
