@@ -15,7 +15,7 @@ struct fragment_shader_payload
         texture = nullptr;
     }
 
-    fragment_shader_payload(const Eigen::Vector3f& col, const Eigen::Vector3f& nor,const Eigen::Vector2f& tc, Texture* tex) :
+    fragment_shader_payload(const Eigen::Vector3f& col, const Eigen::Vector3f& nor, const Eigen::Vector2f& tc, Texture* tex) :
          color(col), normal(nor), tex_coords(tc), texture(tex) {}
 
 

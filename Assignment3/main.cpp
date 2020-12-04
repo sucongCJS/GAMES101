@@ -140,6 +140,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
     Eigen::Vector3f kd = texture_color / 255.f;
     Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
+    int p = 200;  // 高光范围， 值越大， 高光范围越小
 
     auto l1 = light{{20, 20, 20}, {500, 500, 500}};
     auto l2 = light{{-20, 20, 0}, {500, 500, 500}};
@@ -166,7 +167,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
 
         Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
         Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(l));
-        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(h));
+        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::fmax(0, normal.dot(h)), p);
 
         result_color += ambient + diffuse + specular;
     }
@@ -180,6 +181,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);  // 环境光系数
     Eigen::Vector3f kd = payload.color;  // 漫反射系数
     Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);  // 镜面反射系数
+    int p = 200;  // 高光范围， 值越大， 高光范围越小
 
     auto l1 = light{{20, 20, 20}, {500, 500, 500}};
     auto l2 = light{{-20, 20, 0}, {500, 500, 500}};
@@ -204,7 +206,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
 
         Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
         Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(l));
-        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(h));
+        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::fmax(0, normal.dot(h)), p);
 
         result_color += ambient + diffuse + specular;
     }
@@ -332,11 +334,11 @@ int main(int argc, const char** argv)
 
     rst::rasterizer r(700, 700);
 
-    auto texture_path = "hmap.jpg";
+    auto texture_path = "spot_texture.png";
     r.set_texture(Texture(obj_path + texture_path));
 
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
-    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
+    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
 
     if (argc >= 2)
     {
@@ -417,7 +419,7 @@ int main(int argc, const char** argv)
 
         // if (key == 'a' )
         // {
-            angle -= 1;
+            angle -= 10;
         // }
         // else if (key == 'd')
         // {
