@@ -7,6 +7,8 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 #include <memory.h>
+#include <thread>
+#include <mutex>
 
 
 rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
@@ -207,7 +209,48 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
     float f2 = (50 + 0.1) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
-    for (const auto& t:TriangleList)
+    
+    // 多线程
+    const int threadCount = 20;  // 线程数
+    std::thread threads[threadCount];
+    triangleListArg args[threadCount];
+
+    int list_size = TriangleList.size();
+    for(int i=0; i<threadCount; ++i){
+        int offset = (list_size / threadCount) * i;
+        args[i].base = offset;
+        args[i].length = std::min(list_size - offset, list_size / threadCount);
+        threads[i] = std::thread(
+            rst::rasterizer::rasterize_triangle_thread, f2);
+    }
+
+    for(int i=0; i<threadCount; i++){
+        threads[i].join();
+    }
+}
+
+void sum2(int arg){
+    
+}
+
+static Eigen::Vector3f interpolate(float alpha, float beta, float gamma, const Eigen::Vector3f& vert1, const Eigen::Vector3f& vert2, const Eigen::Vector3f& vert3, float weight)
+{
+    return (alpha * vert1 + beta * vert2 + gamma * vert3) / weight;
+}
+
+static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const Eigen::Vector2f& vert1, const Eigen::Vector2f& vert2, const Eigen::Vector2f& vert3, float weight)
+{
+    auto u = (alpha * vert1[0] + beta * vert2[0] + gamma * vert3[0]);
+    auto v = (alpha * vert1[1] + beta * vert2[1] + gamma * vert3[1]);
+
+    u /= weight;
+    v /= weight;
+
+    return Eigen::Vector2f(u, v);
+}
+
+void rst::rasterizer::rasterize_triangle_thread(float f2){
+    for (const auto& t=TriangleList[arg.base]; )
     {
         Triangle newtri = *t;
 
@@ -269,22 +312,6 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
         // Also pass view space vertice position
         rasterize_triangle(newtri, viewspace_pos);
     }
-}
-
-static Eigen::Vector3f interpolate(float alpha, float beta, float gamma, const Eigen::Vector3f& vert1, const Eigen::Vector3f& vert2, const Eigen::Vector3f& vert3, float weight)
-{
-    return (alpha * vert1 + beta * vert2 + gamma * vert3) / weight;
-}
-
-static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const Eigen::Vector2f& vert1, const Eigen::Vector2f& vert2, const Eigen::Vector2f& vert3, float weight)
-{
-    auto u = (alpha * vert1[0] + beta * vert2[0] + gamma * vert3[0]);
-    auto v = (alpha * vert1[1] + beta * vert2[1] + gamma * vert3[1]);
-
-    u /= weight;
-    v /= weight;
-
-    return Eigen::Vector2f(u, v);
 }
 
 //Screen space rasterization

@@ -58,6 +58,11 @@ namespace rst
         int col_id = 0;
     };
 
+    struct triangleListArg{
+        int base;
+        int length;
+    };
+
     class rasterizer
     {
     public:
@@ -87,6 +92,8 @@ namespace rst
 
     private:
         void draw_line(Eigen::Vector3f begin, Eigen::Vector3f end);
+
+        void rst::rasterizer::rasterize_triangle_thread(float f2);
 
         void rasterize_triangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& world_pos);
 
