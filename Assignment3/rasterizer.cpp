@@ -210,8 +210,6 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
 
     Eigen::Matrix4f mvp = projection * view * model;
 
-    std::vector<Triangle *> tl = TriangleList;
-    
     // 多线程
     const int threadCount = 20;  // 线程数
     std::thread threads[threadCount];
@@ -222,7 +220,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
         int offset = (list_size / threadCount) * i;
         args[i].base = offset;
         args[i].length = std::min(list_size - offset, list_size / threadCount);
-        threads[i] = std::thread(&rasterize_triangle_thread, this, args[i], TriangleList, mvp, f1, f2);
+        threads[i] = std::thread(&rasterize_triangle_thread, this, args[i], std::ref(TriangleList), mvp, f1, f2);
     }
 
     for(int i=0; i<threadCount; i++){
@@ -246,10 +244,10 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
     return Eigen::Vector2f(u, v);
 }
 
-void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> TriangleList, Eigen::Matrix4f mvp, float f1, float f2){
+void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> &TriangleList, Eigen::Matrix4f mvp, float f1, float f2){
     for (int i=arg.base; i<arg.base+arg.length; ++i)
     {
-        Triangle *t = TriangleList[i];
+        const auto &t = TriangleList[i];  // & means won't create a copy, const means it won't be modified
         Triangle newtri = *t;
 
         std::array<Eigen::Vector4f, 3> mm {  // 三角形三个点, 经过角度调整, 朝向调整
