@@ -207,7 +207,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
     float f2 = (50 + 0.1) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
-    for (const auto& t:TriangleList)
+    for (const auto& t:TriangleList)  // const makes it explicit to anyone that the contents will not be modified, & means it won't create copies
     {
         Triangle newtri = *t;
 
