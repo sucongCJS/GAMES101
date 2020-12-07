@@ -93,7 +93,7 @@ namespace rst
     private:
         void draw_line(Eigen::Vector3f begin, Eigen::Vector3f end);
 
-        void rst::rasterizer::rasterize_triangle_thread(float f2);
+        void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> &TriangleList, Eigen::Matrix4f mvp, float f1, float f2);
 
         void rasterize_triangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& world_pos);
 

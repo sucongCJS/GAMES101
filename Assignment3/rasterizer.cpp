@@ -221,7 +221,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
         args[i].base = offset;
         args[i].length = std::min(list_size - offset, list_size / threadCount);
         threads[i] = std::thread(
-            rst::rasterizer::rasterize_triangle_thread, f2);
+            args[i], &rasterize_triangle_thread, TriangleList, mvp, f1, f2);
     }
 
     for(int i=0; i<threadCount; i++){
@@ -249,9 +249,10 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
     return Eigen::Vector2f(u, v);
 }
 
-void rst::rasterizer::rasterize_triangle_thread(float f2){
-    for (const auto& t=TriangleList[arg.base]; )
+void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> &TriangleList, Eigen::Matrix4f mvp, float f1, float f2){
+    for (int i=arg.base; i<arg.base+arg.length; ++i)
     {
+        Triangle *t = TriangleList[i];
         Triangle newtri = *t;
 
         std::array<Eigen::Vector4f, 3> mm {  // 三角形三个点, 经过角度调整, 朝向调整
