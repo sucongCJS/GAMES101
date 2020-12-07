@@ -340,25 +340,27 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
 
                 float zp = (alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w()) * Z;  // * zp is depth between zNear and zFar, used for z-buffer
 
+                bool needDraw = false;
                 mtx.lock();
-                float depth = depth_buf[get_index(x, y)];
+                if(zp < depth_buf[get_index(x, y)]){
+                    depth_buf[get_index(x,y)] = zp;
+                    needDraw = true;
+                }
                 mtx.unlock();
-                if(zp < depth)  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
+
+                if(needDraw)  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
                 {
                     // TODO: Interpolate the attributes:
                     auto interpolated_color = (alpha * c[0] / v[0].w() + beta * c[1] / v[1].w() + gamma * c[2] / v[2].w()) * Z;
                     auto interpolated_normal = (alpha * n[0] / v[0].w() + beta * n[1] / v[1].w() + gamma * n[2] / v[2].w()) * Z;
                     auto interpolated_texcoords = (alpha * tex[0] / v[0].w() + beta * tex[1] / v[1].w() + gamma * tex[2] / v[2].w()) * Z;
-                    auto interpolated_shadingcoords = (alpha * view_pos[0] / v[0].w() + beta * view_pos[1] / v[1].w() + gamma * view_pos[2] / v[2].w()) * Z;  //? 这几个interpolated_* 应该都是Vector
+                    auto interpolated_shadingcoords = (alpha * view_pos[0] / v[0].w() + beta * view_pos[1] / v[1].w() + gamma * view_pos[2] / v[2].w()) * Z;  // 这几个interpolated_* 都是Vector
 
                     fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);  // normalized将向量单位化
                     payload.view_pos = interpolated_shadingcoords;
                     auto pixel_color = fragment_shader(payload);  // Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color; fragment_shader具体调用哪个shader在main函数中已经设定好了
                     
                     set_pixel(Eigen::Vector2i(x, y), pixel_color);
-                    mtx.lock();
-                    depth_buf[get_index(x,y)] = zp;
-                    mtx.unlock();
                 }
             }
         }
