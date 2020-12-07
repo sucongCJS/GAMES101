@@ -209,6 +209,8 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
     float f2 = (50 + 0.1) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
+
+    std::vector<Triangle *> tl = TriangleList;
     
     // 多线程
     const int threadCount = 20;  // 线程数
@@ -220,17 +222,12 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
         int offset = (list_size / threadCount) * i;
         args[i].base = offset;
         args[i].length = std::min(list_size - offset, list_size / threadCount);
-        threads[i] = std::thread(
-            args[i], &rasterize_triangle_thread, TriangleList, mvp, f1, f2);
+        threads[i] = std::thread(&rasterize_triangle_thread, this, args[i], TriangleList, mvp, f1, f2);
     }
 
     for(int i=0; i<threadCount; i++){
         threads[i].join();
     }
-}
-
-void sum2(int arg){
-    
 }
 
 static Eigen::Vector3f interpolate(float alpha, float beta, float gamma, const Eigen::Vector3f& vert1, const Eigen::Vector3f& vert2, const Eigen::Vector3f& vert3, float weight)
@@ -249,7 +246,7 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
     return Eigen::Vector2f(u, v);
 }
 
-void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> &TriangleList, Eigen::Matrix4f mvp, float f1, float f2){
+void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> TriangleList, Eigen::Matrix4f mvp, float f1, float f2){
     for (int i=arg.base; i<arg.base+arg.length; ++i)
     {
         Triangle *t = TriangleList[i];
@@ -315,6 +312,7 @@ void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector
     }
 }
 
+std::mutex mtx;
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& view_pos)
 {
@@ -342,7 +340,10 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
 
                 float zp = (alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w()) * Z;  // * zp is depth between zNear and zFar, used for z-buffer
 
-                if(zp < depth_buf[get_index(x, y)])  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
+                mtx.lock();
+                float depth = depth_buf[get_index(x, y)];
+                mtx.unlock();
+                if(zp < depth)  // 如果比当前点更靠近相机, 设置像素点颜色并更新深度缓冲区, 越小离得越近
                 {
                     // TODO: Interpolate the attributes:
                     auto interpolated_color = (alpha * c[0] / v[0].w() + beta * c[1] / v[1].w() + gamma * c[2] / v[2].w()) * Z;
@@ -355,7 +356,9 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
                     auto pixel_color = fragment_shader(payload);  // Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color; fragment_shader具体调用哪个shader在main函数中已经设定好了
                     
                     set_pixel(Eigen::Vector2i(x, y), pixel_color);
+                    mtx.lock();
                     depth_buf[get_index(x,y)] = zp;
+                    mtx.unlock();
                 }
             }
         }
