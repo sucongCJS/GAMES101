@@ -1,5 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <time.h>
 
 #include "global.hpp"
 #include "rasterizer.hpp"
@@ -17,7 +18,8 @@ float radian(float rotation_angle)
 // 欧式距离的平方
 float get_euclidean_distance_square(Vector3f p1, Vector3f p2)
 {
-    return ((p1-p2).array() * (p1-p2).array()).sum();
+    // return ((p1-p2).array() * (p1-p2).array()).sum();
+    return (p1-p2).dot(p1-p2);
 }
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
@@ -126,6 +128,7 @@ struct light
     Eigen::Vector3f intensity;
 };
 
+
 Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
 {
     Eigen::Vector3f return_color = {0, 0, 0};
@@ -160,16 +163,20 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        auto r2 = get_euclidean_distance_square(light.position, point);  // 光源到平面的距离的平方
-        auto l = (light.position - point).normalized();  // light vector 从平面指向点光源的向量 单位化, 只保留方向信息
-        auto h = ((eye_pos + l) / (eye_pos + l).norm()).normalized();  // halfway vector 半程向量 单位化, 只保留方向信息
+        float r2 = get_euclidean_distance_square(light.position, point);  // 光源到平面的距离的平方
+        Eigen::Vector3f l = (light.position - point).normalized();  // light vector 从观察点指向点光源的单位向量 只保留方向信息
+        Eigen::Vector3f v = (eye_pos - point).normalized();  // 从观察点指向眼睛的单位向量
+        Eigen::Vector3f h = (v + l).normalized();  // halfway vector 半程向量 单位化, 只保留方向信息
+        
+        Eigen::Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::max(0.f, normal.dot(l));
+        Eigen::Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::max(0.f, normal.dot(h)), p);
 
-        Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
-        Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(l));
-        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::fmax(0, normal.dot(h)), p);
-
-        result_color += ambient + diffuse + specular;
+        result_color += diffuse + specular;
     }
+
+    Eigen::Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1) 与光源无关!
+
+    result_color += ambient;
 
     return result_color * 255.f;
 }
@@ -259,7 +266,6 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     return result_color * 255.f;
 }
 
-
 Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
 {
     
@@ -309,12 +315,15 @@ int main(int argc, const char** argv)
 
     std::string filename = "output.png";
     objl::Loader Loader;
+    // std::string obj_path = "../models/spot/";
     // std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
     std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
 
     // Load .obj File
+    // bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
     // bool loadout = Loader.LoadFile("D:/x/HF/GAMES101/HF/Assignment3/models/spot/spot_triangulated_good.obj");
     bool loadout = Loader.LoadFile("D:/x/GAMES/GAMES101/Assignment3/models/spot/spot_triangulated_good.obj");
+    
     for(auto mesh:Loader.LoadedMeshes)
     {
         for(int i=0;i<mesh.Vertices.size();i+=3)
@@ -399,6 +408,7 @@ int main(int argc, const char** argv)
 
     while(key != 27)
     {
+        clock_t t1 = clock();
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
         r.set_model(get_model_matrix(angle));
@@ -424,6 +434,7 @@ int main(int argc, const char** argv)
         //     angle += 1;
         // }
 
+        std::cout<<"Multi Threads: "<<(clock() - t1) * 1.0 / CLOCKS_PER_SEC<< "s"<<std::endl;
         std::cout << "frame count: " << frame_count++ << '\n';
     }
     return 0;
