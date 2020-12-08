@@ -167,15 +167,12 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
         Eigen::Vector3f v = (eye_pos - point).normalized();  // 从观察点指向眼睛的单位向量
         Eigen::Vector3f h = (v + l).normalized();  // halfway vector 半程向量 单位化, 只保留方向信息
         
+        Eigen::Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1) 与光源无关! 但是光源多的话, 环境光也应该亮
         Eigen::Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::max(0.f, normal.dot(l));
         Eigen::Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::max(0.f, normal.dot(h)), p);
 
-        result_color += diffuse + specular;
+        result_color += ambient + diffuse + specular;
     }
-
-    Eigen::Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1) 与光源无关!
-
-    result_color += ambient;
 
     return result_color * 255.f;
 }
@@ -209,13 +206,12 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
         Eigen::Vector3f v = (eye_pos - point).normalized();
         Eigen::Vector3f h = (v + l).normalized();
 
+        Eigen::Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
         Eigen::Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::max(0.f, normal.dot(l));
         Eigen::Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::max(0.f, normal.dot(h)), p);
 
-        result_color += diffuse + specular;
+        result_color += ambient + diffuse + specular;
     }
-    Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
-    result_color += ambient;
 
     return result_color * 255.f;
 }
@@ -287,19 +283,19 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f point = payload.view_pos;
     Eigen::Vector3f normal = payload.normal;
 
-
-    float kh = 0.2, kn = 0.1;
-
     // TODO: Implement bump mapping here
     // Let n = normal = (x, y, z)
     // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
     // Vector b = n cross product t
     // Matrix TBN = [t b n]
-    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
-    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
+    // dU = c1 * c2 * (h(u+1/w,v)-h(u,v))
+    // dV = c1 * c2 * (h(u,v+1/h)-h(u,v))
     // Vector ln = (-dU, -dV, 1)
     // Normal n = normalize(TBN * ln)
+    float c1 = 0.2, c2 = 0.1;  // 常数, 定义凹凸贴图的影响程度
+    
     Eigen::Vector3f n = normal;
+
     Eigen::Vector3f t(n.x() * n.y() / std::sqrt(n.x() * n.x() + n.z() * n.z()),
                       std::sqrt(n.x() * n.x() + n.z() * n.z()),
                       n.z() * n.y() / std::sqrt(n.x() * n.x() + n.z() * n.z()));
@@ -307,12 +303,32 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Matrix3f TBN;
     TBN<<t, b, n;
 
-    
-
-
+    float u = payload.tex_coords(0);
+    float v = payload.tex_coords(1);
+    float h = payload.texture->height;
+    float w = payload.texture->width;
+    float dU = c1 * c2 * (payload.texture->getColor(u + 1.0/w, v).norm() - payload.texture->getColor(u, v).norm());
+    float dV = c1 * c2 * (payload.texture->getColor(u, v + 1.0/h).norm() - payload.texture->getColor(u, v).norm());
+    Eigen::Vector3f ln(-dU, -dV, 1);
+    // displacement
+    normal = (TBN * ln).normalized();
 
     Eigen::Vector3f result_color = {0, 0, 0};
-    result_color = normal;
+
+    for (auto& light : lights)
+    {
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* components are. Then, accumulate that result on the *result_color* object.
+        float r2 = get_euclidean_distance_square(light.position, point);
+        Eigen::Vector3f l = (light.position - point).normalized();
+        Eigen::Vector3f v = (eye_pos - point).normalized();
+        Eigen::Vector3f h = (v + l).normalized();
+
+        Eigen::Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
+        Eigen::Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::max(0.f, normal.dot(l));
+        Eigen::Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::max(0.f, normal.dot(h)), p);
+
+        result_color += ambient + diffuse + specular;
+    }
 
     return result_color * 255.f;
 }
@@ -353,7 +369,8 @@ int main(int argc, const char** argv)
     rst::rasterizer r(700, 700);
 
     // auto texture_path = "spot/spot_texture.png";
-    auto texture_path = "rock/rock.png";
+    // auto texture_path = "rock/rock.png";
+    auto texture_path = "spot/hmap.jpg";
     r.set_texture(Texture(obj_path + texture_path));
 
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
