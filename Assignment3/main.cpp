@@ -128,7 +128,6 @@ struct light
     Eigen::Vector3f intensity;
 };
 
-
 Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
 {
     Eigen::Vector3f return_color = {0, 0, 0};
@@ -205,16 +204,18 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     for (auto& light : lights)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* components are. Then, accumulate that result on the *result_color* object.
-        auto r2 = get_euclidean_distance_square(light.position, point);
-        auto l = (light.position - point).normalized();
-        auto h = ((eye_pos + l) / (eye_pos + l).norm()).normalized();
+        float r2 = get_euclidean_distance_square(light.position, point);
+        Eigen::Vector3f l = (light.position - point).normalized();
+        Eigen::Vector3f v = (eye_pos - point).normalized();
+        Eigen::Vector3f h = (v + l).normalized();
 
-        Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
-        Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::fmax(0, normal.dot(l));
-        Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::fmax(0, normal.dot(h)), p);
+        Eigen::Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::max(0.f, normal.dot(l));
+        Eigen::Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::max(0.f, normal.dot(h)), p);
 
-        result_color += ambient + diffuse + specular;
+        result_color += diffuse + specular;
     }
+    Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
+    result_color += ambient;
 
     return result_color * 255.f;
 }
@@ -298,6 +299,16 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
     // dV = kh * kn * (h(u,v+1/h)-h(u,v))
     // Vector ln = (-dU, -dV, 1)
     // Normal n = normalize(TBN * ln)
+    Eigen::Vector3f n = normal;
+    Eigen::Vector3f t(n.x() * n.y() / std::sqrt(n.x() * n.x() + n.z() * n.z()),
+                      std::sqrt(n.x() * n.x() + n.z() * n.z()),
+                      n.z() * n.y() / std::sqrt(n.x() * n.x() + n.z() * n.z()));
+    Eigen::Vector3f b = n.cross(t);
+    Eigen::Matrix3f TBN;
+    TBN<<t, b, n;
+
+    
+
 
 
     Eigen::Vector3f result_color = {0, 0, 0};
@@ -317,7 +328,7 @@ int main(int argc, const char** argv)
     objl::Loader Loader;
     // std::string obj_path = "../models/spot/";
     // std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
-    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
+    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/";
 
     // Load .obj File
     // bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
@@ -341,11 +352,15 @@ int main(int argc, const char** argv)
 
     rst::rasterizer r(700, 700);
 
-    auto texture_path = "spot_texture.png";
+    // auto texture_path = "spot/spot_texture.png";
+    auto texture_path = "rock/rock.png";
     r.set_texture(Texture(obj_path + texture_path));
 
+    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
+    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = bump_fragment_shader;
+
 
     if (argc >= 2)
     {
