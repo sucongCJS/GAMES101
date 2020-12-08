@@ -209,9 +209,6 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
     float f2 = (50 + 0.1) / 2.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
-<<<<<<< HEAD
-    for (const auto& t:TriangleList)  // const makes it explicit to anyone that the contents will not be modified, & means it won't create copies
-=======
 
     // 多线程
     const int threadCount = 20;  // 线程数
@@ -249,7 +246,6 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
 
 void rst::rasterizer::rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> &TriangleList, Eigen::Matrix4f mvp, float f1, float f2){
     for (int i=arg.base; i<arg.base+arg.length; ++i)
->>>>>>> eddf0e25b06aa7b29c4ad588fb2ca4c9d9796ba7
     {
         const auto &t = TriangleList[i];  // & means won't create a copy, const means it won't be modified
         Triangle newtri = *t;
