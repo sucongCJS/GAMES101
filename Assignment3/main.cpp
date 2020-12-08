@@ -67,12 +67,12 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 
     float half_height = tan(radian(eye_fov/2))*zNear;
     float half_width = aspect_ratio*half_height;
-    float r =  half_width;
-    float l = -half_width;
-    float t =  half_height;
-    float b = -half_height;
-    float n = -zNear;
-    float f = -zFar;
+    float r = -half_width;
+    float l =  half_width;
+    float t = -half_height;
+    float b =  half_height;
+    float n = zNear;
+    float f = zFar;
 
     // 正交投影的平移矩阵: 平移到原点
     Eigen::Matrix4f matrix_ortho_tranf = Eigen::Matrix4f::Identity();
