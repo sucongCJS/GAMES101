@@ -348,7 +348,7 @@ int main(int argc, const char** argv)
 
     // auto texture_path = "spot_texture.png";
     // auto texture_path = "rock.png";
-    auto texture_path = "rock.png";
+    auto texture_path = "rock.jpg";
     
     for(auto mesh:Loader.LoadedMeshes)
     {

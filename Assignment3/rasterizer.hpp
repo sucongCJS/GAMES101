@@ -3,7 +3,6 @@
 //
 
 #pragma once
-#pragma GCC optimize(2)
 
 #include <eigen3/Eigen/Eigen>
 #include <optional>
@@ -58,11 +57,6 @@ namespace rst
         int col_id = 0;
     };
 
-    struct triangleListArg{
-        int base;
-        int length;
-    };
-
     class rasterizer
     {
     public:
@@ -93,8 +87,6 @@ namespace rst
     private:
         void draw_line(Eigen::Vector3f begin, Eigen::Vector3f end);
 
-        void rasterize_triangle_thread(triangleListArg arg, std::vector<Triangle *> &TriangleList, Eigen::Matrix4f mvp, float f1, float f2);
-
         void rasterize_triangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& world_pos);
 
         // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
@@ -113,7 +105,7 @@ namespace rst
 
         std::optional<Texture> texture;
 
-        std::function<Eigen::Vector3f(fragment_shader_payload)> fragment_shader;  // 返回值是Vector3f, 传入参数是fragment_shader_payload 在main函数中决定这个fragment是normal_fragment_shader还是phong_fragment_shader还是其他..., 然后在rasterizer中调用fragment_shader中就会自动调用main中指定的shader
+        std::function<Eigen::Vector3f(fragment_shader_payload)> fragment_shader;
         std::function<Eigen::Vector3f(vertex_shader_payload)> vertex_shader;
 
         std::vector<Eigen::Vector3f> frame_buf;
