@@ -337,12 +337,18 @@ int main(int argc, const char** argv)
     objl::Loader Loader;
     // std::string obj_path = "../models/spot/";
     // std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
-    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/";
+    // std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
+    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/rock/";
 
     // Load .obj File
     // bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
-    // bool loadout = Loader.LoadFile("D:/x/HF/GAMES101/HF/Assignment3/models/spot/spot_triangulated_good.obj");
-    bool loadout = Loader.LoadFile("D:/x/GAMES/GAMES101/Assignment3/models/spot/spot_triangulated_good.obj");
+    // bool loadout = Loader.LoadFile(obj_path + "spot_triangulated_good.obj");
+    // bool loadout = Loader.LoadFile(obj_path + "Rick(fixed).obj");
+    bool loadout = Loader.LoadFile(obj_path + "rock.obj");
+
+    // auto texture_path = "spot_texture.png";
+    // auto texture_path = "rock.png";
+    auto texture_path = "rock.png";
     
     for(auto mesh:Loader.LoadedMeshes)
     {
@@ -361,16 +367,13 @@ int main(int argc, const char** argv)
 
     rst::rasterizer r(700, 700);
 
-    // auto texture_path = "spot/spot_texture.png";
-    // auto texture_path = "rock/rock.png";
-    auto texture_path = "spot/hmap.jpg";
     r.set_texture(Texture(obj_path + texture_path));
 
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
-    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = bump_fragment_shader;
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = displacement_fragment_shader;
+    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = displacement_fragment_shader;
 
 
     if (argc >= 2)

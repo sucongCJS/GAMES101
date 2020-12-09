@@ -3,12 +3,12 @@
 //
 
 #include <algorithm>
-#include "rasterizer.hpp"
 #include <opencv2/opencv.hpp>
 #include <math.h>
 #include <memory.h>
 #include <thread>
 #include <mutex>
+#include "rasterizer.hpp"
 
 
 rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
@@ -212,7 +212,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
     Eigen::Matrix4f mvp = projection * view * model;
 
     // 多线程
-    const int threadCount = 20;  // 线程数
+    const int threadCount = 1;  // 线程数
     std::thread threads[threadCount];
     triangleListArg args[threadCount];
 
