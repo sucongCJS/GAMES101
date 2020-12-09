@@ -248,7 +248,7 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
     n = (TBN * ln).normalized();
 
     Eigen::Vector3f result_color(0, 0, 0);
-    result_color = n;
+    result_color = n;  // n 用的是纹理的颜色去做变化, 所以结果会有纹理的颜色, displacement只用了纹理去做点的移动, 最后颜色是通过blinn phong产生的, 所以没有纹理的颜色
 
     // 这里就不加blinn phong了
 
@@ -257,7 +257,6 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
 
 Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payload)
 {
-    
     Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
     Eigen::Vector3f kd = payload.color;
     Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
@@ -275,8 +274,6 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     Eigen::Vector3f point = payload.view_pos;
     Eigen::Vector3f normal = payload.normal;
 
-    float kh = 0.2, kn = 0.1;
-    
     // TODO: Implement displacement mapping here
     // Let n = normal = (x, y, z)
     // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
@@ -287,16 +284,43 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     // Vector ln = (-dU, -dV, 1)
     // Position p = p + kn * n * h(u,v)
     // Normal n = normalize(TBN * ln)
+    float c1 = 0.2, c2 = 0.1;  // 常数, 定义凹凸贴图的影响程度
 
+    Eigen::Vector3f n = payload.normal;
+
+    Eigen::Vector3f t(n.x() * n.y() / std::sqrt(n.x() * n.x() + n.z() * n.z()),
+                      std::sqrt(n.x() * n.x() + n.z() * n.z()),
+                      n.z() * n.y() / std::sqrt(n.x() * n.x() + n.z() * n.z()));
+    Eigen::Vector3f b = n.cross(t);
+    Eigen::Matrix3f TBN;
+    TBN<<t, b, n;
+
+    float u = payload.tex_coords(0);
+    float v = payload.tex_coords(1);
+    float h = payload.texture->height;
+    float w = payload.texture->width;
+    float dU = c1 * c2 * (payload.texture->getColor(u + 1.0/w, v).norm() - payload.texture->getColor(u, v).norm());  // 助教说：正规的凹凸纹理应该是只有一维参量的灰度图，而本课程为了框架使用的简便性而使用了一张 RGB 图作为凹凸纹理的贴图，因此需要指定一种规则将彩色投影到灰度，而我只是「恰好」选择了 norm 而已。为了确保你们的结果与我一致，我才要求你们都使用 norm 作为计算方法。
+    float dV = c2 * c2 * (payload.texture->getColor(u, v + 1.0/h).norm() - payload.texture->getColor(u, v).norm());
+    Eigen::Vector3f ln(-dU, -dV, 1);
+    n = (TBN * ln).normalized();
+
+    point += c2 * n * payload.texture->getColor(u, v).norm();  // n提供方向, payload.texture->getColor(u, v).norm()提供大小, c2 是常数, 点沿新的法线方向移动, 造成凹凸
 
     Eigen::Vector3f result_color = {0, 0, 0};
 
     for (auto& light : lights)
     {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
-        // components are. Then, accumulate that result on the *result_color* object.
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* components are. Then, accumulate that result on the *result_color* object.
+        float r2 = get_euclidean_distance_square(light.position, point);
+        Eigen::Vector3f l = (light.position - point).normalized();
+        Eigen::Vector3f v = (eye_pos - point).normalized();
+        Eigen::Vector3f h = (v + l).normalized();
 
+        Eigen::Vector3f ambient  = ka.array() * amb_light_intensity.array();  // shape = (3,1)
+        Eigen::Vector3f diffuse  = kd.array() * (light.intensity / r2).array() * std::max(0.f, normal.dot(l));
+        Eigen::Vector3f specular = ks.array() * (light.intensity / r2).array() * std::pow(std::max(0.f, normal.dot(h)), p);
 
+        result_color += ambient + diffuse + specular;
     }
 
     return result_color * 255.f;
@@ -345,7 +369,8 @@ int main(int argc, const char** argv)
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
     // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = bump_fragment_shader;
+    // std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = bump_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = displacement_fragment_shader;
 
 
     if (argc >= 2)
