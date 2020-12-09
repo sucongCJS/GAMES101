@@ -338,17 +338,17 @@ int main(int argc, const char** argv)
     // std::string obj_path = "../models/spot/";
     // std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
     // std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
-    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/rock/";
+    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
 
     // Load .obj File
     // bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
-    // bool loadout = Loader.LoadFile(obj_path + "spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile(obj_path + "spot_triangulated_good.obj");
     // bool loadout = Loader.LoadFile(obj_path + "Rick(fixed).obj");
-    bool loadout = Loader.LoadFile(obj_path + "rock.obj");
+    // bool loadout = Loader.LoadFile(obj_path + "rock.obj");
 
-    // auto texture_path = "spot_texture.png";
+    auto texture_path = "spot_texture.png";
     // auto texture_path = "rock.png";
-    auto texture_path = "rock.png";
+    // auto texture_path = "rock.png";
     
     for(auto mesh:Loader.LoadedMeshes)
     {
