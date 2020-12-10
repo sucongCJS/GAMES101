@@ -343,7 +343,6 @@ int main(int argc, const char** argv)
     // Load .obj File
     // bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
     bool loadout = Loader.LoadFile(obj_path + "spot_triangulated_good.obj");
-    // bool loadout = Loader.LoadFile(obj_path + "Rick(fixed).obj");
     // bool loadout = Loader.LoadFile(obj_path + "Rick.obj");
 
     // auto texture_path = "Rick_d.png";
@@ -411,8 +410,8 @@ int main(int argc, const char** argv)
         }
     }
 
-    // Eigen::Vector3f eye_pos = {0,2,9};
-    Eigen::Vector3f eye_pos = {0,0,10};
+    Eigen::Vector3f eye_pos = {0,2,9};  // for rick
+    // Eigen::Vector3f eye_pos = {0,0,10};
     // Eigen::Vector3f eye_pos = {0,0,30};
 
     r.set_vertex_shader(vertex_shader);
@@ -457,10 +456,9 @@ int main(int argc, const char** argv)
         cv::imwrite(filename, image);
         key = cv::waitKey(10);
 
-        angle = 0;
         // if (key == 'a' )
         // {
-        //     angle -= 10;
+            angle -= 10;
         // }
         // else if (key == 'd')
         // {
