@@ -325,7 +325,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
     {
         for(int y=box_bottom; y<=box_top; y++)
         {
-            float percent = insideTrianglePercent(x, y, t.v, 1);  //  MSAA
+            float percent = insideTrianglePercent(x, y, t.v, 4);  //  MSAA
             if(percent > 0)  // 只要像素有部分在三角形内
             {
                 // z也是要插值的, 因为三角形的点的z值可能不一样
