@@ -8,6 +8,9 @@ using namespace cv;
 using namespace Eigen;
 using namespace std;
 
+int width = 1024;
+int height = 768;
+
 int main(int argc, char** argv)
 {
     cout << __cplusplus << endl;

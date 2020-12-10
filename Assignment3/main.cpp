@@ -337,18 +337,19 @@ int main(int argc, const char** argv)
     objl::Loader Loader;
     // std::string obj_path = "../models/spot/";
     // std::string obj_path = "D:/x/HF/GAMES101/HF/Assignment3/models/spot/";
-    // std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
-    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/rick/";
+    std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/spot/";
+    // std::string obj_path = "D:/x/GAMES/GAMES101/Assignment3/models/rick/";
 
     // Load .obj File
     // bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
-    // bool loadout = Loader.LoadFile(obj_path + "spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile(obj_path + "spot_triangulated_good.obj");
     // bool loadout = Loader.LoadFile(obj_path + "Rick(fixed).obj");
-    bool loadout = Loader.LoadFile(obj_path + "Rick.obj");
+    // bool loadout = Loader.LoadFile(obj_path + "Rick.obj");
 
-    auto texture_path = "Rick_d.png";
+    // auto texture_path = "Rick_d.png";
     // auto texture_path = "rock.png";
     // auto texture_path = "rock.png";
+    auto texture_path = "spot.png";
     
     for(auto mesh:Loader.LoadedMeshes)
     {
@@ -410,7 +411,9 @@ int main(int argc, const char** argv)
         }
     }
 
-    Eigen::Vector3f eye_pos = {0,2,9};
+    // Eigen::Vector3f eye_pos = {0,2,9};
+    Eigen::Vector3f eye_pos = {0,0,10};
+    // Eigen::Vector3f eye_pos = {0,0,30};
 
     r.set_vertex_shader(vertex_shader);
     r.set_fragment_shader(active_shader);
