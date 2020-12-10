@@ -212,7 +212,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
     Eigen::Matrix4f mvp = projection * view * model;
 
     // 多线程
-    const int threadCount = 1;  // 线程数
+    const int threadCount = 20;  // 线程数
     std::thread threads[threadCount];
     triangleListArg args[threadCount];
 
