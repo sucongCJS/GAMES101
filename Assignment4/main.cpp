@@ -40,9 +40,7 @@ cv::Point2f recursive_bezier(std::vector<cv::Point2f> &control_points, float t, 
     // std::cout<<((control_points[1] - control_points[0]) * t);
     cv::Point2f p = control_points[0] + (control_points[1] - control_points[0]) * t;
     if(control_points.size() == 2)
-    {
         return p;
-    }
 
     control_points.push_back(p);
     control_points.erase(control_points.begin());
