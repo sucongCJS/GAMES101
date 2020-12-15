@@ -11,7 +11,7 @@ int main()
 {
     Scene scene(1280, 960);
 
-    auto sph1 = std::make_unique<Sphere>(Vector3f(-1, 0, -12), 2);
+    auto sph1 = std::make_unique<Sphere>(Vector3f(-1, 0, -12), 2);  // ?
     sph1->materialType = DIFFUSE_AND_GLOSSY;
     sph1->diffuseColor = Vector3f(0.6, 0.7, 0.8);
 
@@ -30,7 +30,7 @@ int main()
 
     scene.Add(std::move(mesh));
     scene.Add(std::make_unique<Light>(Vector3f(-20, 70, 20), 0.5));
-    scene.Add(std::make_unique<Light>(Vector3f(30, 50, -12), 0.5));    
+    scene.Add(std::make_unique<Light>(Vector3f(30, 50, -12), 0.5));
 
     Renderer r;
     r.Render(scene);

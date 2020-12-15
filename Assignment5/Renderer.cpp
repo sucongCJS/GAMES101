@@ -69,7 +69,7 @@ float fresnel(const Vector3f &I, const Vector3f &N, const float &ior)
 }
 
 // [comment]
-// Returns true if the ray intersects an object, false otherwise.
+// Returns true if the ray intersects an object, false otherwise. 
 //
 // \param orig is the ray origin
 // \param dir is the ray direction
@@ -80,15 +80,13 @@ float fresnel(const Vector3f &I, const Vector3f &N, const float &ior)
 // \param[out] *hitObject stores the pointer to the intersected object (used to retrieve material information, etc.)
 // \param isShadowRay is it a shadow ray. We can return from the function sooner as soon as we have found a hit.
 // [/comment]
-std::optional<hit_payload> trace(
-        const Vector3f &orig, const Vector3f &dir,
-        const std::vector<std::unique_ptr<Object> > &objects)
+std::optional<hit_payload> trace(const Vector3f &orig, const Vector3f &dir, const std::vector<std::unique_ptr<Object> > &objects)
 {
-    float tNear = kInfinity;
+    float tNear = kInfinity;  // 光线到所有object的最小t
     std::optional<hit_payload> payload;
     for (const auto & object : objects)
     {
-        float tNearK = kInfinity;
+        float tNearK = kInfinity;  // 光线到当前object的最小t
         uint32_t indexK;
         Vector2f uvK;
         if (object->intersect(orig, dir, tNearK, indexK, uvK) && tNearK < tNear)
@@ -108,31 +106,25 @@ std::optional<hit_payload> trace(
 // [comment]
 // Implementation of the Whitted-style light transport algorithm (E [S*] (D|G) L)
 //
-// This function is the function that compute the color at the intersection point
-// of a ray defined by a position and a direction. Note that thus function is recursive (it calls itself).
+// This function computes the color at the intersection point of a ray defined by a position and a direction. Note that thus function is recursive (it calls itself).
 //
-// If the material of the intersected object is either reflective or reflective and refractive,
-// then we compute the reflection/refraction direction and cast two new rays into the scene
-// by calling the castRay() function recursively. When the surface is transparent, we mix
-// the reflection and refraction color using the result of the fresnel equations (it computes
-// the amount of reflection and refraction depending on the surface normal, incident view direction
-// and surface refractive index).
-//
-// If the surface is diffuse/glossy we use the Phong illumation model to compute the color
-// at the intersection point.
+// If the material of the intersected object is either reflective or reflective and refractive, then we compute the reflection/refraction direction and cast two new rays into the scene by calling the castRay() function recursively. 
+// If the surface is transparent, we mix the reflection and refraction color using the result of the fresnel equations (it computes the amount of reflection and refraction depending on the surface normal, incident view direction and surface refractive index).
+// If the surface is diffuse/glossy we use the Phong illumation model to compute the color at the intersection point.
 // [/comment]
-Vector3f castRay(
-        const Vector3f &orig, const Vector3f &dir, const Scene& scene,
-        int depth)
+Vector3f castRay(const Vector3f &orig, const Vector3f &dir, const Scene& scene, int depth)
 {
-    if (depth > scene.maxDepth) {
+    if (depth > scene.maxDepth) 
+    {
         return Vector3f(0.0,0.0,0.0);
     }
 
     Vector3f hitColor = scene.backgroundColor;
+
+    // 如果光线击中物体
     if (auto payload = trace(orig, dir, scene.get_objects()); payload)
     {
-        Vector3f hitPoint = orig + dir * payload->tNear;
+        Vector3f hitPoint = orig + dir * payload->tNear;  // 光线与物体的交点
         Vector3f N; // normal
         Vector2f st; // st coordinates
         payload->hit_obj->getSurfaceProperties(hitPoint, dir, payload->index, payload->uv, N, st);
@@ -205,8 +197,8 @@ Vector3f castRay(
 
 // [comment]
 // The main render function. This where we iterate over all pixels in the image, generate
-// primary rays and cast these rays into the scene. The content of the framebuffer is
-// saved to a file.
+// primary rays and cast these rays into the scene. 
+// The content of the framebuffer is saved to a file.
 // [/comment]
 void Renderer::Render(const Scene& scene)
 {
@@ -237,7 +229,7 @@ void Renderer::Render(const Scene& scene)
     }
 
     // save framebuffer to file
-    FILE* fp = fopen("binary.ppm", "wb");
+    FILE* fp = fopen("D:/x/GAMES/GAMES101/Assignment5/binary.ppm", "wb");
     (void)fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
     for (auto i = 0; i < scene.height * scene.width; ++i) {
         static unsigned char color[3];

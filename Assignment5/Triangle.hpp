@@ -4,14 +4,35 @@
 
 #include <cstring>
 
-bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f& v2, const Vector3f& orig,
-                          const Vector3f& dir, float& tnear, float& u, float& v)
+bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f& v2, const Vector3f& orig, const Vector3f& dir, float& tnear, float& u, float& v)
 {
     // TODO: Implement this function that tests whether the triangle
     // that's specified bt v0, v1 and v2 intersects with the ray (whose
     // origin is *orig* and direction is *dir*)
     // Also don't forget to update tnear, u and v.
-    return false;
+    auto E1 = v1 - v0;
+    auto E2 = v2 - v0;
+    auto S = orig - v0;
+    auto S1 = crossProduct(dir, E2);
+    auto S2 = crossProduct(S, E1);
+    auto solution = 1 / dotProduct(S1, E1) * Vector3f(
+        dotProduct(S2, E2), 
+        dotProduct(S1, S),
+        dotProduct(S2, dir)
+    );
+    
+    auto t = solution.x;
+    auto b1 = solution.y;
+    auto b2 = solution.z;
+
+    if(t < 0) return false;
+    if(b1 < 0 || b2 < 0) return false;
+
+    tnear = t;
+    u = b1;
+    v = b2;
+
+    return true;
 }
 
 class MeshTriangle : public Object
@@ -33,8 +54,7 @@ public:
         memcpy(stCoordinates.get(), st, sizeof(Vector2f) * maxIndex);
     }
 
-    bool intersect(const Vector3f& orig, const Vector3f& dir, float& tnear, uint32_t& index,
-                   Vector2f& uv) const override
+    bool intersect(const Vector3f& orig, const Vector3f& dir, float& tnear, uint32_t& index, Vector2f& uv) const override
     {
         bool intersect = false;
         for (uint32_t k = 0; k < numTriangles; ++k)
@@ -42,7 +62,8 @@ public:
             const Vector3f& v0 = vertices[vertexIndex[k * 3]];
             const Vector3f& v1 = vertices[vertexIndex[k * 3 + 1]];
             const Vector3f& v2 = vertices[vertexIndex[k * 3 + 2]];
-            float t, u, v;
+            float t, u, v;  // t是和物体三角形相交的t值, uv是交点的重心坐标
+            // 判断物体的每个三角形是否和光线相交, 且这个物体要比当前
             if (rayTriangleIntersect(v0, v1, v2, orig, dir, t, u, v) && t < tnear)
             {
                 tnear = t;
@@ -56,8 +77,7 @@ public:
         return intersect;
     }
 
-    void getSurfaceProperties(const Vector3f&, const Vector3f&, const uint32_t& index, const Vector2f& uv, Vector3f& N,
-                              Vector2f& st) const override
+    void getSurfaceProperties(const Vector3f&, const Vector3f&, const uint32_t& index, const Vector2f& uv, Vector3f& N, Vector2f& st) const override  // const here is a promise that this function won't change any member variables, and won't call any functions that might.
     {
         const Vector3f& v0 = vertices[vertexIndex[index * 3]];
         const Vector3f& v1 = vertices[vertexIndex[index * 3 + 1]];

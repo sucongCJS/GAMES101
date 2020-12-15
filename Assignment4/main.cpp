@@ -81,7 +81,7 @@ int main()
     cv::setMouseCallback("Bezier Curve", mouse_handler, nullptr);
 
     int key = -1;
-    while (key != 27) 
+    while (key != 27)
     {
         for (auto &point : control_points) 
         {

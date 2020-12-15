@@ -11,8 +11,15 @@ using namespace std;
 int width = 1024;
 int height = 768;
 
+struct s{
+    int a;
+    int b;
+};
+
 int main(int argc, char** argv)
 {
-    cout << __cplusplus << endl;
-    return 0;
+    std::optional<s> o;
+    o.emplace();
+    o->a = 10;
+    cout<<o->a;
 }
