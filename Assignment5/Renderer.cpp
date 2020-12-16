@@ -8,6 +8,9 @@ inline float deg2rad(const float &deg)
 { return deg * M_PI/180.0; }
 
 // Compute reflection direction
+// I: 入射光的方向, 从光源指向物体
+// N: 物体的法向量, 单位长度
+// https://blog.csdn.net/yinhun2012/article/details/79466517
 Vector3f reflect(const Vector3f &I, const Vector3f &N)
 {
     return I - 2 * dotProduct(I, N) * N;
@@ -17,13 +20,9 @@ Vector3f reflect(const Vector3f &I, const Vector3f &N)
 // Compute refraction direction using Snell's law
 //
 // We need to handle with care the two possible situations:
-//
-//    - When the ray is inside the object
-//
 //    - When the ray is outside.
-//
+//    - When the ray is inside the object
 // If the ray is outside, you need to make cosi positive cosi = -N.I
-//
 // If the ray is inside, you need to invert the refractive indices and negate the normal N
 // [/comment]
 Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior)
@@ -31,7 +30,8 @@ Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior)
     float cosi = clamp(-1, 1, dotProduct(I, N));
     float etai = 1, etat = ior;
     Vector3f n = N;
-    if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -N; }
+    if (cosi < 0) { cosi = -cosi; } 
+    else { std::swap(etai, etat); n= -N; }
     float eta = etai / etat;
     float k = 1 - eta * eta * (1 - cosi * cosi);
     return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
@@ -39,11 +39,8 @@ Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior)
 
 // [comment]
 // Compute Fresnel equation
-//
 // \param I is the incident view direction
-//
 // \param N is the normal at the intersection point
-//
 // \param ior is the material refractive index
 // [/comment]
 float fresnel(const Vector3f &I, const Vector3f &N, const float &ior)
@@ -114,7 +111,7 @@ std::optional<hit_payload> trace(const Vector3f &orig, const Vector3f &dir, cons
 // [/comment]
 Vector3f castRay(const Vector3f &orig, const Vector3f &dir, const Scene& scene, int depth)
 {
-    if (depth > scene.maxDepth) 
+    if (depth > scene.maxDepth)
     {
         return Vector3f(0.0,0.0,0.0);
     }
@@ -125,9 +122,9 @@ Vector3f castRay(const Vector3f &orig, const Vector3f &dir, const Scene& scene, 
     if (auto payload = trace(orig, dir, scene.get_objects()); payload)
     {
         Vector3f hitPoint = orig + dir * payload->tNear;  // 光线与物体的交点
-        Vector3f N; // normal
+        Vector3f N; // normal 单位向量 
         Vector2f st; // st coordinates
-        payload->hit_obj->getSurfaceProperties(hitPoint, dir, payload->index, payload->uv, N, st);
+        payload->hit_obj->getSurfaceProperties(hitPoint, dir, payload->index, payload->uv, N, st);  // ?
         switch (payload->hit_obj->materialType) {
             case REFLECTION_AND_REFRACTION:
             {
@@ -135,31 +132,30 @@ Vector3f castRay(const Vector3f &orig, const Vector3f &dir, const Scene& scene, 
                 Vector3f refractionDirection = normalize(refract(dir, N, payload->hit_obj->ior));
                 Vector3f reflectionRayOrig = (dotProduct(reflectionDirection, N) < 0) ?
                                              hitPoint - N * scene.epsilon :
-                                             hitPoint + N * scene.epsilon;
+                                             hitPoint + N * scene.epsilon;  // ?
                 Vector3f refractionRayOrig = (dotProduct(refractionDirection, N) < 0) ?
                                              hitPoint - N * scene.epsilon :
                                              hitPoint + N * scene.epsilon;
-                Vector3f reflectionColor = castRay(reflectionRayOrig, reflectionDirection, scene, depth + 1);
-                Vector3f refractionColor = castRay(refractionRayOrig, refractionDirection, scene, depth + 1);
+                Vector3f reflectionColor = castRay(reflectionRayOrig, reflectionDirection, scene, depth + 1);  // 有些光反射出去
+                Vector3f refractionColor = castRay(refractionRayOrig, refractionDirection, scene, depth + 1);  // 有些光折射到其他地方
                 float kr = fresnel(dir, N, payload->hit_obj->ior);
                 hitColor = reflectionColor * kr + refractionColor * (1 - kr);
                 break;
             }
             case REFLECTION:
             {
-                float kr = fresnel(dir, N, payload->hit_obj->ior);
                 Vector3f reflectionDirection = reflect(dir, N);
                 Vector3f reflectionRayOrig = (dotProduct(reflectionDirection, N) < 0) ?
                                              hitPoint + N * scene.epsilon :
                                              hitPoint - N * scene.epsilon;
+                float kr = fresnel(dir, N, payload->hit_obj->ior);
                 hitColor = castRay(reflectionRayOrig, reflectionDirection, scene, depth + 1) * kr;
                 break;
             }
             default:
             {
                 // [comment]
-                // We use the Phong illumation model int the default case. The phong model
-                // is composed of a diffuse and a specular reflection component.
+                // We use the Phong illumation model int the default case. The phong model is composed of a diffuse and a specular reflection component.
                 // [/comment]
                 Vector3f lightAmt = 0, specularColor = 0;
                 Vector3f shadowPointOrig = (dotProduct(dir, N) < 0) ?
@@ -217,12 +213,12 @@ void Renderer::Render(const Scene& scene)
             // generate primary ray direction
             float x;
             float y;
-            // TODO: Find the x and y positions of the current pixel to get the direction
-            // vector that passes through it.
-            // Also, don't forget to multiply both of them with the variable *scale*, and
-            // x (horizontal) variable with the *imageAspectRatio*            
+            // TODO: Find the x and y positions of the current pixel to get the direction vector that passes through it.
+            // Also, don't forget to multiply both of them with the variable *scale*, and x (horizontal) variable with the *imageAspectRatio*
+            x = (2 * ((i + 0.5) / scene.width) - 1) * imageAspectRatio;
+            y = (1 - 2 * ((j + 0.5) / scene.height));
 
-            Vector3f dir = Vector3f(x, y, -1); // Don't forget to normalize this direction!
+            Vector3f dir = normalize(Vector3f(x, y, -1)); // Don't forget to normalize this direction!
             framebuffer[m++] = castRay(eye_pos, dir, scene, 0);
         }
         UpdateProgress(j / (float)scene.height);

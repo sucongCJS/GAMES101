@@ -28,7 +28,7 @@ public:
 
     // material properties
     MaterialType materialType;
-    float ior;
+    float ior;  // 折射率, 空气是1
     float Kd, Ks;
     Vector3f diffuseColor;
     float specularExponent;
