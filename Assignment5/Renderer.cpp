@@ -47,7 +47,7 @@ float fresnel(const Vector3f &I, const Vector3f &N, const float &ior)
 {
     float cosi = clamp(-1, 1, dotProduct(I, N));
     float etai = 1, etat = ior;
-    if (cosi > 0) {  std::swap(etai, etat); }
+    if (cosi > 0) { std::swap(etai, etat); }
     // Compute sini using Snell's law
     float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi));
     // Total internal reflection
@@ -55,11 +55,11 @@ float fresnel(const Vector3f &I, const Vector3f &N, const float &ior)
         return 1;
     }
     else {
-        float cost = sqrtf(std::max(0.f, 1 - sint * sint));
+        float cost = sqrtf(std::max(0.f, 1 - sint * sint));  // 出射角cos
         cosi = fabsf(cosi);
-        float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
-        float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
-        return (Rs * Rs + Rp * Rp) / 2;
+        float Rs = std::pow(((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost)), 2);
+        float Rp = std::pow(((etai * cost) - (etat * cosi)) / ((etai * cost) + (etat * cosi)), 2);
+        return (Rs + Rp) / 2;
     }
     // As a consequence of the conservation of energy, transmittance is given by:
     // kt = 1 - kr;
@@ -122,8 +122,8 @@ Vector3f castRay(const Vector3f &orig, const Vector3f &dir, const Scene& scene, 
     if (auto payload = trace(orig, dir, scene.get_objects()); payload)
     {
         Vector3f hitPoint = orig + dir * payload->tNear;  // 光线与物体的交点
-        Vector3f N; // normal 单位向量 
-        Vector2f st; // st coordinates
+        Vector3f N; // normal 单位向量
+        Vector2f st; // st coordinates 类似uv坐标系
         payload->hit_obj->getSurfaceProperties(hitPoint, dir, payload->index, payload->uv, N, st);  // ?
         switch (payload->hit_obj->materialType) {
             case REFLECTION_AND_REFRACTION:
