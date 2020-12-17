@@ -12,12 +12,12 @@ int main()
     Scene scene(1280, 960);
 
     auto sph1 = std::make_unique<Sphere>(Vector3f(-1, 0, -12), 2);  // 圆心半径
-    sph1->materialType = DIFFUSE_AND_GLOSSY;
+    sph1->materialType = DIFFUSE_AND_GLOSSY;  // 不透明物体
     sph1->diffuseColor = Vector3f(1.0, 1.0, 0.0);
 
     auto sph2 = std::make_unique<Sphere>(Vector3f(0.5, -0.5, -8), 1.5);
-    sph2->ior = 1.5;
     sph2->materialType = REFLECTION_AND_REFRACTION;
+    sph2->ior = 1.5;  // 透明物体设置折射率
 
     scene.Add(std::move(sph1));
     scene.Add(std::move(sph2));
